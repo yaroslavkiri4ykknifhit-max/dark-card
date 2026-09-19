@@ -73,19 +73,20 @@
                 if (!response.ok) {
                     throw new Error('Failed to mint pass. Please try again.');
                 }
-                const data = await response.json();
-                
-                if (data.passUrl) {
-                    statusMsg.textContent = 'Access granted. Redirecting to your pass...';
-                    statusMsg.classList.add('text-green-500');
-                    statusMsg.classList.remove('text-gray-500');
-                    mintBtn.textContent = 'Pass Minted';
-                    
-                    // Redirect to the PassNinja landing page which handles Apple Wallet / Google Wallet installation
-                    window.location.href = data.passUrl;
-                } else {
-                    throw new Error('No pass URL returned.');
-                }
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = 'blackcard.pkpass';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(downloadUrl);
+
+                statusMsg.textContent = 'Access granted. Pass downloaded.';
+                statusMsg.classList.add('text-green-500');
+                statusMsg.classList.remove('text-gray-500');
+                mintBtn.textContent = 'Pass Minted';
             } catch (error) {
                 console.error(error);
                 statusMsg.textContent = 'Error: ' + error.message;
