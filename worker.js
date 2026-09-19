@@ -21,12 +21,17 @@ export default {
         const { name } = await request.json();
         const serial = Math.floor(100 + Math.random() * 900).toString();
         
-        // Construct the payload for WalletWallet API
         const payload = {
             barcodeValue: `CENTURION-${serial}`,
             barcodeFormat: "QR",
             logoText: "CENTURION",
-            hexBackgroundColor: "#000000",
+            passType: "eventTicket", // eventTicket allows full background image in Apple Wallet
+            hexBackgroundColor: "#111111", // Dark background for the rest of the card
+            hexForegroundColor: "#FFFFFF", // Highlighted white text
+            hexLabelColor: "#FF4500", // Neon red/orange for the labels to match the image
+            stripURL: "https://yaroslavkiri4ykknifhit-max.github.io/dark-card/bg.jpg",
+            backgroundURL: "https://yaroslavkiri4ykknifhit-max.github.io/dark-card/bg.jpg",
+            thumbnailURL: "https://yaroslavkiri4ykknifhit-max.github.io/dark-card/bg.jpg",
             primaryFields: [
                 {
                     label: "NAME",
