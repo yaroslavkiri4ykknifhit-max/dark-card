@@ -22,7 +22,7 @@ export default {
         const serial = Math.floor(100 + Math.random() * 900).toString();
         
         const payload = {
-            barcodeValue: `CENTURION-${serial}`,
+            barcodeValue: "https://colddev.pro/",
             barcodeFormat: "QR",
             logoText: "CENTURION",
             passType: "eventTicket", // eventTicket allows full background image in Apple Wallet
