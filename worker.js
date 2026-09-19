@@ -1,9 +1,16 @@
-// PLACEHOLDER FOR API KEY
-const PASSNINJA_API_KEY = "YOUR_PASSNINJA_API_KEY_HERE"; // Get this from PassNinja dashboard
+// worker.js
+
+// --- CONFIGURATION ---
+// 1. Get your API Key and Account ID from the PassNinja Dashboard settings.
+// 2. Create a template in PassNinja. Add a data field with the key "name".
+// 3. Paste the Template ID below (usually starts with "ptk_").
+const PASSNINJA_API_KEY = "YOUR_PASSNINJA_API_KEY_HERE";
+const PASSNINJA_ACCOUNT_ID = "YOUR_PASSNINJA_ACCOUNT_ID_HERE"; 
+const PASSNINJA_TEMPLATE_ID = "YOUR_TEMPLATE_ID_HERE"; // e.g., ptk_xyz123
 
 export default {
   async fetch(request, env, ctx) {
-    // Handle CORS preflight requests
+    // Handle CORS preflight requests for the frontend
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -18,43 +25,13 @@ export default {
       try {
         const { name } = await request.json();
         
-        // Construct the payload for PassNinja API
+        // PassNinja expects the template ID and a 'pass' object containing the dynamic fields
+        // that match the keys you defined in your PassNinja template dashboard.
         const payload = {
-            passType: "generic",
+            passType: PASSNINJA_TEMPLATE_ID, // some SDKs/APIs use passType, some passTemplate. We will send passTemplate.
+            passTemplate: PASSNINJA_TEMPLATE_ID, 
             pass: {
-                backgroundColor: "rgb(0,0,0)",
-                foregroundColor: "rgb(255,255,255)",
-                labelColor: "rgb(105,105,105)",
-                primaryFields: [
-                    {
-                        key: "name",
-                        label: "NAME",
-                        value: name
-                    }
-                ],
-                secondaryFields: [
-                    {
-                        key: "status",
-                        label: "STATUS",
-                        value: "I'M CEO, BITCH"
-                    }
-                ],
-                auxiliaryFields: [
-                    {
-                        key: "serial",
-                        label: "SERIAL",
-                        value: Math.floor(100 + Math.random() * 900).toString()
-                    }
-                ],
-                barcode: null, // Remove all barcodes
-                // Add a QR code linking to a placeholder URL
-                barcodes: [
-                    {
-                        format: "PKBarcodeFormatQR",
-                        message: "https://example.com/verify-pass",
-                        messageEncoding: "iso-8859-1"
-                    }
-                ]
+                name: name || "Elite Member" // The key "name" must exist in your PassNinja Template fields!
             }
         };
 
@@ -62,24 +39,30 @@ export default {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "x-api-key": PASSNINJA_API_KEY
+                "x-api-key": PASSNINJA_API_KEY,
+                "x-account-id": PASSNINJA_ACCOUNT_ID
             },
             body: JSON.stringify(payload)
         });
 
         if (!passApiResponse.ok) {
             const errorText = await passApiResponse.text();
-            throw new Error(`API Error: ${passApiResponse.status} ${errorText}`);
+            console.error("PassNinja Error:", errorText);
+            throw new Error(`PassNinja API Error: ${passApiResponse.status} ${errorText}`);
         }
 
-        const pkpassBuffer = await passApiResponse.arrayBuffer();
+        const data = await passApiResponse.json();
 
-        // Return the binary .pkpass file to the frontend
-        return new Response(pkpassBuffer, {
+        // PassNinja returns a landing URL for the pass (e.g. data.urls.landing)
+        if (!data.urls || !data.urls.landing) {
+             throw new Error("Landing URL not found in PassNinja response.");
+        }
+
+        // Return the URL to the frontend so it can redirect the user to download the pass
+        return new Response(JSON.stringify({ passUrl: data.urls.landing }), {
           headers: {
             "Access-Control-Allow-Origin": "*",
-            "Content-Type": "application/vnd.apple.pkpass",
-            "Content-Disposition": 'attachment; filename="blackcard.pkpass"'
+            "Content-Type": "application/json"
           }
         });
 
